@@ -1,0 +1,596 @@
+
+
+
+
+
+                            How To WebPack
+
+
+
+
+
+
+
+Tasveer Singh
+@tazsingh
+CTO of HoodQ - We're hiring!
+Organizer of TorontoJS
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    History of Build Tools
+
+
+
+
+
+
+
+
+
+
+
+
+
+  JavaScript inline with HTML
+
+<html>
+  <body>
+    <script>
+      function helloToronto() {
+        console.log("Hello Toronto!");
+      }
+    </script>
+  </body>
+</html>
+
+- Great for small amounts of JavaScript
+- Only make 1 web request
+  - Mobile optimized
+
+
+
+
+
+
+
+
+  Unobtrusive JavaScript
+
+<html>
+  <body>
+    <script src="hellotoronto.js"></script>
+  </body>
+</html>
+
+// hellotoronto.js
+function helloToronto() {
+  console.log("Hello Toronto!");
+}
+
+
+- Separates page structure from dynamic logic
+- Easily build via a simple command like:
+  cat file1.js file2.js file3.js | minifier > final.js
+- Build tools basically stayed this way for a while
+
+
+
+
+
+
+
+
+
+
+  Rails asset pipeline
+
+- Sort of the first mainstream JavaScript build tool
+- Ability to write your JavaScript in multiple files
+  - "require" syntax
+- Transform files based on extension
+  - .js.es6 -> transform es2015 into js
+  - .js.ts.erb -> execute erb then typescript to produce js
+- Combine JavaScript files into one file
+  - Rails will concatenate the files appropriately
+- Minify JavaScript file
+- Add checksums to asset file names in order to break browser caching
+  - application-9f160c15ab68b0887aea0e6a3ba2f2ce.js
+  - application-689df2ed169710864b325934d2f6051a.css
+  - logo-43cfeb950f7fca36cd4abd0f8ff2e204.png
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Asynchronous Module Definition (AMD)
+
+- Ability to separate JavaScript into modules
+- Modules will define their dependencies
+  - Use AMD syntax to define modules:
+    define(
+      ["a", "b"]           // require these modules
+    , function (a, b) {    // async!
+        console.log(a, b); // do things with the required modules
+    });
+- Based on the dependency graph, modules will be lazily loaded
+- e.g. require.js
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Browserify
+
+- Embraces the NPM ecosystem for packaging JavaScript applications
+  - No more:
+    "What's bower?"
+    "A package manager, install it with npm."
+    "What's npm?"
+    "A package manager, you can install it with brew"
+    "What's brew?"
+- Use CommonJS modules
+- Doesn't produce globals
+- Will combine modules into a single JavaScript file
+- JavaScript file can be minified and transformed appropriately
+
+
+
+
+
+
+
+
+
+
+
+
+  Problems with the Past
+
+- Inline JavaScript
+  - Great up to a certain amount of JavaScript
+    - I recommend inlining up to 12KB of JS - ~8 TCP Packets
+  - Have to re-transfer and re-parse all JavaScript on re-load
+
+- Single File Build Tools
+  - Unobtrusive, Rails, Browserify, etc.
+  - Lots of data transferred over the wire
+    - Startup time lag
+    - Needs to parse/compile a lot of JavaScript
+    - Bad for Mobile
+  - Need to re-download file on every change
+
+- Asynchronous Module Definition
+  - Lots of Web Requests
+    - Bad for Mobile
+    - Optimizations for this aren't good enough
+  - Syntax is annoying
+    - Need to indent all your code in the callback
+      - Code Pyramids!
+    - Requiring lots of dependencies gets messy:
+      define(["a", "b", "c", "d", "e", "f", "g", "h"]
+      , function(a, b, c, d, e, g, h) {
+          console.log("Your code");
+      });
+      // Can you spot the bug?
+
+
+
+
+
+
+
+
+
+
+  The WebPack Way
+
+- All assets are loaded inline via JavaScript
+  - CSS is inlined in JavaScript
+  - Images are inlined in JavaScript
+  - JavaScript is inlined in JavaScript
+    - <insert Inception joke here>
+- Only load the minimum assets required
+  - Code Splitting
+- Asynchronously load new assets as required
+- Define JavaScript in modules
+  - CommonJS or AMD
+- Uses NPM as the package manager
+- Doesn't introduce globals
+- Transform assets
+  - ES2015, JSX, Typescript, etc.
+- Define transforms globally or per dependency
+  - Similar in spirit to Rails' way of transforming
+    based on file extension
+- Plethora of tools and optimizers
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  All Assets are JavaScript
+
+- Minimizes the number of network requests drastically
+  - Great mobile optimization
+- Inlines CSS and Images into JavaScript
+- Can still load assets as separate files if desired
+- Plethora of different loaders/transforms for a wealth of options
+  e.g.:
+  - babel-loader
+  - less-loader
+  - jsx-loader
+  - http://webpack.github.io/docs/list-of-loaders.html
+
+
+
+
+// will insert CSS into document globally
+require("css-loader!./css/style.css");
+
+// will optimize the PNG and transform it into a Data URI
+var dataUrl = require(
+  "url!image?optimizationLevel=4!./images/logo.png"
+);
+
+// can optimize SVGs with ease
+var svgPath = require("image!./images/graphic.svg");
+
+// will transform ES2015 into ES2009
+var HelloToronto = require("babel!./js/hellotoronto.js");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Code Splitting
+
+- Only load the minimum assets required
+  - Keeps initial payload small
+- Load the rest asynchronously as needed
+- You define Code Split points in your app
+- WebPack uses Split Points to create Code Chunks
+  based on the dependency graph
+- Lots of WebPack chunking optimizations. e.g.:
+  - Optimize for smaller initial payload chunks
+  - Optimize for fewer web requests
+  - Optimize for smaller chunk sizes
+- Can define multiple entry points into your application
+
+
+
+// WebPack will load module-a and module-b
+// Will only evaluate module-a
+require.ensure([]
+, function(require) {
+    var mod = require("module-a");
+    require("module-c");
+});
+
+
+- WebPack is smart enough to determine that "module-a"
+  is required inside the callback and will therefore load it
+  (unlike previous AMD implementations)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Code Splitting Gotchas
+
+- CSS relies on global state
+- If CSS is managed by WebPack and loaded asynchronously,
+  what happens?
+
+// Canadian Style Sheets
+// chunk 1
+body {
+  background-colour: maple;
+}
+
+// chunk 2
+body {
+  background-colour: salmon;
+}
+
+- Scenario 1:
+  - chunk 1 loads then chunk 2 loads
+  - body background is salmon
+- Scenario 2:
+  - chunk 2 loads then chunk 1 loads
+  - body background is maple
+
+
+- Can use the !sorry (or !important) operator to set precedence
+  - Not a recommended practice
+- I recommend being more specific about your CSS selectors
+  e.g.
+  body.maple {
+    background-colour: maple;
+  }
+
+  body.salmon {
+    background-colour: salmon;
+  }
+
+  // toggle between maple and salmon classes with your JavaScript
+
+
+
+
+
+
+
+
+
+
+
+  Cool WebPack Tools
+
+- webpack-dev-middleware
+  - http://webpack.github.io/docs/webpack-dev-middleware.html
+- webpack-dev-server
+  - http://webpack.github.io/docs/webpack-dev-server.html
+- webpack's --watch option
+  - Similar to Browserify's watchify
+- react-hot-loader
+  - http://gaearon.github.io/react-hot-loader/
+- Integrates nicely into existing tools
+  - grunt, gulp, bower, karma
+
+
+http://webpack.github.io/docs/comparison.html
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Taz, WebPack looks cool.
+  But it also looks like it does everything under the sun.
+  I'm kind of intimidated.
+  Where do I even start??
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  HoodQ's Webpack Configuration
+
+// common.webpack.js
+var webpack = require("webpack");
+var path = require("path");
+var fs = require("fs");
+
+module.exports = {
+  entry: {
+    client: "./client.js"
+  , unsupported: "./unsupported_client.js"
+  }
+, output: {
+    path: __dirname + "/build"
+  , publicPath: "/public/"
+  , filename: "[name].[chunkhash].js"
+  , chunkFilename: "[id].[chunkhash].client.js"
+  }
+, resolve: {
+    extensions: [
+      ""
+    , ".js"
+    ]
+  }
+, module: {
+    loaders: [
+      {
+        test: /\.js$/
+      , exclude: /node_modules/
+      , loader: "jsx-loader?harmony"
+      }
+    , {
+        test: /\.less$/
+      , loader: "style-loader!css-loader!less-loader"
+      }
+    , {
+        test: /\.woff(\?v=\d+\.\d+\.\d+)?$/
+      , loader: "file"
+      //, loader: "url?mimetype=application/font-woff"
+      }
+    , {
+        test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/
+      , loader: "file"
+      //, loader: "url?mimetype=application/octet-stream"
+      }
+    , {
+        test: /\.eot(\?v=\d+\.\d+\.\d+)?$/
+      , loader: "file"
+      }
+    , {
+        test: /\.svg(\?v=\d+\.\d+\.\d+)?$/
+      //, loader: "jsx-loader?harmony"
+      , loader: "file"
+      //, loader: "url?limit=10000&mimetype=image/svg+xml"
+      }
+    ]
+  }
+, plugins: [
+    function() {
+      this.plugin("done", function(stats) {
+        fs.writeFileSync(
+          path.join(__dirname, "webpackStats.json")
+        , JSON.stringify(stats.toJson())
+        );
+      });
+    }
+  , new webpack.optimize.OccurrenceOrderPlugin(true)
+  ]
+};
+
+
+
+
+
+
+
+
+
+
+
+
+// webpack.config.js
+var webpack = require("webpack");
+var config = require("./common.webpack.config");
+
+config.plugins.push(
+  new webpack.DefinePlugin({
+    __DEV__: true
+  })
+);
+
+module.exports = config;
+
+
+
+
+
+
+
+
+
+// webpack.production.config.js
+var webpack = require("webpack");
+var config = require("./common.webpack.config");
+
+if(!config.plugins) config.plugins = [];
+
+config.plugins.push(
+  new webpack.DefinePlugin({
+    __DEV__: false
+  })
+, new webpack.optimize.UglifyJsPlugin()
+, new webpack.optimize.DedupePlugin()
+, new webpack.optimize.MinChunkSizePlugin({
+    minChunkSize: 2048
+  })
+, new webpack.DefinePlugin({
+    "process.env": {
+      NODE_ENV: JSON.stringify("production")
+    }
+  })
+//, new webpack.NoErrorsPlugin()
+)
+
+module.exports = config;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                          Thank You!
+
+
+
+  @tazsingh                                     HoodQ is Hiring
+
+
+
+
+
+
+
+
+
+
+
+
